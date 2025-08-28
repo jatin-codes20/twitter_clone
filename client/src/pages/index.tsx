@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { BsTwitter } from "react-icons/bs";
 import { BiHash, BiMoney } from "react-icons/bi";
 import { BiHomeCircle } from "react-icons/bi";
@@ -8,6 +8,10 @@ import { BsBookmarks } from "react-icons/bs";
 import { BsPerson } from "react-icons/bs";
 import FeedCard from "../../components/FeedCard";
 import { SlOptions } from "react-icons/sl";
+import{CredentialResponse, GoogleLogin } from "@react-oauth/google"
+import toast from "react-hot-toast";
+import {graphqlClient} from "../../clients/api"
+import { VerifyGoogleTokenQuery } from "../../graphql/queries/user";
 
 
 
@@ -48,10 +52,27 @@ const sidebarMenuButtons: TwitterSideBarButton[] = [
 ];
 
 export default function Home() {
-  return (
-    
-         
+
+    const handleLoginSuccess = useCallback(async (cred:CredentialResponse) => {
+      
+      const googleToken = cred.credential
+      
+      if(!googleToken) return toast.error("Google token not found")
+      const {verifyGoogleToken}= await graphqlClient.request(
+      VerifyGoogleTokenQuery,
+       { token: googleToken }
+  );
+
+ 
+  if(verifyGoogleToken){
+    window.localStorage.setItem("__twitter_token",googleToken);
+    toast.success("Login Successful");
+  }
+},[]);
+
+       return (  
          <div >
+     
           <div className="grid grid-cols-12 h-screen w-screen px-40">
             <div className="col-span-3  pt-1 ml-4">
               <div className=" mt-5 ml-4 text-2xl h-fit w-fit  hover:bg-gray-700 rounded-full  cursor-pointer transition-all pt-1 " >
@@ -77,8 +98,13 @@ export default function Home() {
                <FeedCard />
                 <FeedCard />
             </div>
-            <div className="col-span-3"></div>
+            <div className="col-span-4 p-5 border border-gray-600 ">
+            <div className="text-center pl-9 py-8 bg-slate-700 rounded-lg">
+              <h1 className="my-2 text-2xl">New to twitter?</h1>
+              <GoogleLogin onSuccess={handleLoginSuccess}></GoogleLogin>
+            </div>
           </div>
           </div>
-  );
-}
+          </div>
+  
+              )};
