@@ -1,13 +1,9 @@
 import React, { useCallback, useState } from "react";
-import { BsTwitter } from "react-icons/bs";
-import { BiHash, BiImageAlt, BiMoney } from "react-icons/bi";
-import { BiHomeCircle } from "react-icons/bi";
-import { BsBell } from "react-icons/bs";
-import { BsEnvelope } from "react-icons/bs";
-import { BsBookmarks } from "react-icons/bs";
-import { BsPerson } from "react-icons/bs";
+
+import { BiImageAlt } from "react-icons/bi";
+
 import FeedCard from "../../components/FeedCard";
-import { SlOptions } from "react-icons/sl";
+
 import { useCurrentUser } from "../../hooks/user";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
@@ -35,14 +31,16 @@ export default function Home(props: HomeProps) {
 
     const  { user } = useCurrentUser();
     const querClient=useQueryClient()
-    const  tweets = props.tweets ;
+    const { tweets = props.tweets as Tweet[] } = useGetAllTweets();
+    
     const { mutateAsync } = useCreateTweet();
     const [content, setContent] = useState("");
     const [imageURL, setImageURL] = useState("");
-    const [awsURL, setAwsURL] = useState({getSignedURLForTweet:""});
+  
     const [ uploadFile, setFile] = useState<File | null>(null);
    const handleCreateTweet = useCallback(
     async () => {
+       let uploadedUrl: string | undefined;
     if(uploadFile){
     const { getSignedURLForTweet } = await graphqlClient.request(
         getSignedURLForTweetQuery,
@@ -51,26 +49,28 @@ export default function Home(props: HomeProps) {
           imageType: uploadFile.type,
         }
       );
-
-     if(getSignedURLForTweet) setAwsURL({getSignedURLForTweet})
+      console.log(getSignedURLForTweet);
+    
 
       if (getSignedURLForTweet) {
         toast.loading("Uploading...", { id: "2" });
+        console.log("Uploading to:", getSignedURLForTweet);
         await axios.put(getSignedURLForTweet, uploadFile, {
           headers: {
             "Content-Type": uploadFile.type,
           },
         });
+        console.log("Upload successful");
         toast.success("Upload Completed", { id: "2" });
         const url = new URL(getSignedURLForTweet);
-        const myFilePath = `${url.origin}${url.pathname}`;
-        setImageURL(myFilePath);
+        uploadedUrl= `${url.origin}${url.pathname}`;
+        setImageURL(uploadedUrl);
       }
         
     }
     await mutateAsync({
       content,
-      imageURL,
+      imageURL: uploadedUrl ?? imageURL
     });
     setContent("");
     setImageURL("");

@@ -7,8 +7,14 @@ import FeedCard from "../../components/FeedCard";
 import { Tweet, User } from "../../gql/graphql";
 import{useRouter} from "next/router"
 import { getUserByIdQuery } from "../../graphql/queries/user";
+
+import { followUserMutation, unfollowUserMutation } from "../../graphql/mutation/user";
+// Ensure that followUserMutation and unfollowUserMutation are exported as GraphQL documents (e.g., string or TypedDocumentNode) from the mutation file.
+
 import { graphqlClient } from "../../clients/api";
 import { userInfo } from "os";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 
 interface ServerProps {
   userInfo?: User;
@@ -17,7 +23,34 @@ interface ServerProps {
 const UserProfilePage: NextPage<ServerProps> = (props) => {
     const { userInfo } = props;
         const router=useRouter()
-        console.log(router.query)
+    const { user: currentUser } = useCurrentUser();
+  const queryClient = useQueryClient();
+
+  const amIFollowing = useMemo(() => {
+    if (!props.userInfo) return false;
+    return (
+      (currentUser?.following?.findIndex(
+        (el) => el?.id === props.userInfo?.id
+      ) ?? -1) >= 0
+    );
+  }, [currentUser?.following, props.userInfo]);
+
+  const handleFollowUser = useCallback(async () => {
+    if (!props.userInfo?.id) return;
+
+    await graphqlClient.request(followUserMutation, { to: props.userInfo?.id });
+    await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+  }, [props.userInfo?.id, queryClient]);
+
+  const handleUnfollowUser = useCallback(async () => {
+    if (!props.userInfo?.id) return;
+
+    await graphqlClient.request(unfollowUserMutation, {
+      to: props.userInfo?.id,
+    });
+    await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+  }, [props.userInfo?.id, queryClient]);
+    
     return(
         <TwitterLayout>
 
@@ -50,6 +83,34 @@ const UserProfilePage: NextPage<ServerProps> = (props) => {
               {userInfo?.firstName} {userInfo?.lastName}
             </h1>
             
+             <div className="flex justify-between items-center">
+            <div className="flex gap-4 mt-2 text-sm text-gray-400">
+              <span>{userInfo?.followers?.length} followers</span>
+              <span>{userInfo?.following?.length} following</span>
+            </div>
+
+          </div>
+
+              {currentUser?.id !== props.userInfo?.id && (
+                <>
+                  {amIFollowing ? (
+                    <button
+                      onClick={handleUnfollowUser}
+                      className="bg-white text-black px-3 py-1 rounded-full text-sm"
+                    >
+                      Unfollow
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleFollowUser}
+                      className="bg-white text-black px-3 py-1 rounded-full text-sm"
+                    >
+                      Follow
+                    </button>
+                  )}
+                </>
+              )}
+            
             </div>
 
              <div>
@@ -57,8 +118,9 @@ const UserProfilePage: NextPage<ServerProps> = (props) => {
               <FeedCard data={tweet as Tweet} key={tweet?.id} />
             ))}
           </div>
-          
-           </div>
+
+         
+          </div>
         </TwitterLayout>
        
     )

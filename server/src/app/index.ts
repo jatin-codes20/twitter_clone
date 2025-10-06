@@ -19,7 +19,7 @@ export async function initServer() {
               ${Tweet.types}
                
                type Query { ${User.queries}  ${Tweet.queries}  }
-                type Mutation { ${Tweet.mutations} }
+                type Mutation { ${Tweet.mutations}  ${User.mutations}  }
             `,
         resolvers: {
             Query: {
@@ -28,6 +28,7 @@ export async function initServer() {
             },
             Mutation: {
                 ...Tweet.resolvers.mutations,
+                ...User.resolvers.mutations,
             },
               ...Tweet.resolvers.extraResolvers,
               ...User.resolvers.extraResolvers,
@@ -42,7 +43,7 @@ export async function initServer() {
     app.use(
     '/graphql',
     cors({
-      origin: 'http://localhost:3001', // your frontend
+      origin: 'http://localhost:3000', // your frontend
       credentials: true,               // if you need cookies
     }),
     express.json(),

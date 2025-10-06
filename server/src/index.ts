@@ -1,5 +1,6 @@
 import { initServer } from './app/index.js';
-
+import * as dotenv from 'dotenv';
+dotenv.config();
  async function start() {
     const app = await initServer();
 

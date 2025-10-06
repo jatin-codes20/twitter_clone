@@ -145,10 +145,40 @@ const TwitterLayout: React.FunctionComponent<TwitterlayoutProps> = ( props) => {
             {props.children}
             </div>
             <div className="col-span-4 p-5 border border-gray-600 ">
-           {!user && < div className="text-center pl-9 py-8 bg-slate-700 rounded-lg">
-              <h1 className="my-2 text-2xl">New to twitter?</h1>
-              <GoogleLogin onSuccess={handleLoginSuccess}></GoogleLogin>
-            </div>}
+           {!user ? (
+              <div className="text-center pl-9 py-8 bg-slate-700 rounded-lg">
+                <h1 className="my-2 text-2xl">New to twitter?</h1>
+                <GoogleLogin onSuccess={handleLoginSuccess}></GoogleLogin>
+              </div>
+            ) : (
+            <div className="px-4 py-3 bg-slate-800 rounded-lg">
+              <h1 className="my-2 text-2xl mb-5">Users you may know</h1>
+              {user?.recommendedUsers?.map((el) => (
+                <div className="flex items-center gap-3 mt-2" key={el?.id}>
+                  {el?.profileImage && (
+                    <Image
+                      src={el?.profileImage}
+                      alt="user-image"
+                      className="rounded-full"
+                      width={60}
+                      height={60}
+                    />
+                  )}
+                  <div>
+                    <div className="text-lg">
+                      {el?.firstName} {el?.lastName}
+                    </div>
+                    <Link
+                      href={`/${el?.id}`}
+                      className="bg-white text-black text-sm px-5 py-1 w-full rounded-lg"
+                    >
+                      View
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           </div>
           
           </div>
